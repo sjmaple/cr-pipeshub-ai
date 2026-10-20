@@ -9136,6 +9136,12 @@ components:
         chatMode:
           type: string
           description: Chat mode used for this turn (e.g. `quick`, `internal_search`)
+        routed:
+          type: boolean
+          description: On an answer, set when the AI service chose the model instead of the request.
+        routingReason:
+          type: string
+          description: The AI service's short reason for choosing that model.
 
     FollowUpQuestion:
       type: object
@@ -46148,6 +46154,10 @@ paths:
                       contextLength:
                         type: number
                         nullable: true
+                      configuration:
+                        type: object
+                        additionalProperties: true
+                        description: Configuration keys that differ for this model, applied over the shared `configuration`.
       responses:
         '200':
           description: |

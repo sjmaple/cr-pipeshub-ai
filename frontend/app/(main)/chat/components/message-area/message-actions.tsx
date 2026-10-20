@@ -13,7 +13,7 @@ import {
 import type { ModelInfo, AppliedFilters } from '@/chat/types';
 import type { CitationMaps } from './response-tabs/citations';
 import { useCommandStore } from '@/lib/store/command-store';
-import { ChatMessageExtras } from '@/config';
+import { ChatMessageExtras, chatModelOptions } from '@/config';
 import { toast } from '@/lib/store/toast-store';
 import { useChatSpeechSynthesis } from '@/lib/hooks/use-chat-speech-synthesis';
 import { AgentsApi } from '@/app/(main)/agents/api';
@@ -352,7 +352,36 @@ export function MessageActions({
   if (isStreaming) return null;
 
   const chatModeLabel = formatChatMode(modelInfo?.chatMode);
-  const modelName = modelInfo?.modelFriendlyName || modelInfo?.modelName || '';
+  const answerLabel = chatModelOptions.answerLabel(t, modelInfo);
+  const modelName = answerLabel?.label || modelInfo?.modelFriendlyName || modelInfo?.modelName || '';
+  const modelPill = modelName ? (
+    <Flex
+      align="center"
+      justify="center"
+      gap="1"
+      style={{
+        height: '24px',
+        padding: '0 var(--space-2)',
+        borderRadius: 'var(--radius-1)',
+      }}
+    >
+      <MaterialIcon
+        name={answerLabel?.icon ?? 'memory'}
+        size={ICON_SIZES.PRIMARY}
+        color="var(--slate-11)"
+      />
+      <Text
+        size="1"
+        style={{
+          color: 'var(--slate-11)',
+          lineHeight: 'var(--line-height-1)',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        {modelName}
+      </Text>
+    </Flex>
+  ) : null;
 
   return (
     <>
@@ -842,34 +871,9 @@ export function MessageActions({
         )}
 
         {/* Model name with icon */}
-        {modelName && (
-          <Flex
-            align="center"
-            justify="center"
-            gap="1"
-            style={{
-              height: '24px',
-              padding: '0 var(--space-2)',
-              borderRadius: 'var(--radius-1)',
-            }}
-          >
-            <MaterialIcon
-              name="memory"
-              size={ICON_SIZES.PRIMARY}
-              color="var(--slate-11)"
-            />
-            <Text
-              size="1"
-              style={{
-                color: 'var(--slate-11)',
-                lineHeight: 'var(--line-height-1)',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {modelName}
-            </Text>
-          </Flex>
-        )}
+        {modelPill && (answerLabel ? (
+          <Tooltip content={answerLabel.tooltip} side="top">{modelPill}</Tooltip>
+        ) : modelPill)}
       </Flex>
       </Flex>
 

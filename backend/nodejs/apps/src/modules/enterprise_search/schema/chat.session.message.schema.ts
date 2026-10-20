@@ -201,6 +201,8 @@ const chatSessionMessageSchema = new Schema<IChatSessionMessageDocument>(
       chatMode: { type: String, default: 'quick' },
       modelFriendlyName: { type: String },
       reasoningEffort: { type: String, enum: REASONING_EFFORT_VALUES },
+      routed: { type: Boolean },
+      routingReason: { type: String },
     },
     appliedFilters: {
       apps: [

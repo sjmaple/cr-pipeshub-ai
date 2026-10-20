@@ -58,5 +58,10 @@ export { useKbListExtraColumns } from '@/app/(main)/knowledge-base/hooks/use-kb-
 export { ConnectorOverviewExtras } from '@/app/(main)/workspace/connectors/components/instance-panel/connector-overview-extras';
 // A toolset's "Tool approvals" (OSS: what its tools do by default; organization rules aren't set here)
 export { ToolsetToolRulesNotice as ToolsetToolRulesDialog } from '@/app/(main)/workspace/actions/components/toolset-tool-rules-notice';
+// Chat model choices and model settings beside the configured models (OSS: none)
+export { chatModelOptions } from '@/app/(main)/chat/utils/chat-model-options';
+export { ModelSelectorExtraOptions } from '@/app/(main)/chat/components/chat-panel/expansion-panels/model-selector/model-selector-extra-options';
+export { aiModelFormOptions } from '@/app/(main)/workspace/ai-models/ai-model-form-options';
+export { PickedModelExtraFields } from '@/app/(main)/workspace/ai-models/components/picked-model-extra-fields';
 
 

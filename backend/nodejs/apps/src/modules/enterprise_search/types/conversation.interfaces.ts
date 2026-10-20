@@ -415,4 +415,8 @@ export interface IAIModel {
   modelFriendlyName?: string;
   /** Forwarded to the Python LLM factory. */
   reasoningEffort?: ReasoningEffort;
+  /** Set on an answer when the AI service chose the model, not the request. */
+  routed?: boolean;
+  /** The AI service's short reason for that choice. */
+  routingReason?: string;
 }

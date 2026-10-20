@@ -1452,11 +1452,16 @@ def _reasoning_effort_kwargs(
         return {}
 
     effort_input = reasoning_effort or model_default_reasoning_effort(config) or DEFAULT_REASONING_EFFORT
-    if effort_input == "none":
+    if effort_input == "none" and not config.get("allowDisabledReasoning"):
         # "none" is no longer offered as a UI choice (see the docstring
         # above) — floor it unconditionally rather than only when a
         # REASONING_MANDATORY fact happens to be learned for this model.
+        # allowDisabledReasoning is for internal calls that want no reasoning at all.
         effort_input = REASONING_MANDATORY_FALLBACK_EFFORT
+
+    if effort_input == "none" and provider == LLMProvider.ANTHROPIC.value:
+        # Claude only thinks when asked; any effort value would ask.
+        return {}
 
     if provider == LLMProvider.OLLAMA.value:
         return {"reasoning": _OLLAMA_EFFORT_MAP.get(effort_input, effort_input)}
@@ -1645,7 +1650,7 @@ def _resolve_bedrock_effort_input(reasoning_effort: str | None, config: dict[str
     model is flagged ``isReasoning``.
     """
     effort_input = reasoning_effort or model_default_reasoning_effort(config) or DEFAULT_REASONING_EFFORT
-    if effort_input == "none":
+    if effort_input == "none" and not config.get("allowDisabledReasoning"):
         return REASONING_MANDATORY_FALLBACK_EFFORT
     return effort_input
 
@@ -1677,13 +1682,16 @@ def _bedrock_additional_model_request_fields(
             effort = _BEDROCK_GPT_OSS_EFFORT_MAP.get(effort_input, effort_input)
         else:
             # GPT-5.6 / GPT-6 Converse models: pass UI effort through.
-            # ``none`` is already floored to low above.
+            # ``none`` reaches here only with allowDisabledReasoning, and they accept it.
             effort = effort_input
         return {"reasoning_effort": effort}
 
     if provider == LLMProvider.ANTHROPIC.value or (
         model_name and ("claude" in model_name.lower() or "anthropic" in model_name.lower())
     ):
+        if effort_input == "none":
+            # Claude only thinks when asked, so sending no thinking fields turns it off.
+            return {}
         if _bedrock_anthropic_uses_adaptive_thinking(model_name):
             effort = _ANTHROPIC_EFFORT_MAP.get(effort_input, effort_input)
             return {
@@ -1702,6 +1710,8 @@ def _bedrock_additional_model_request_fields(
         }
 
     if _bedrock_is_nova_2(model_name):
+        if effort_input == "none":
+            return {}
         effort = _BEDROCK_NOVA_EFFORT_MAP.get(effort_input, effort_input)
         return {
             "reasoningConfig": {

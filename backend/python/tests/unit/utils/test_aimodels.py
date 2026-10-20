@@ -659,6 +659,13 @@ class TestReasoningEffortKwargs:
             "use_responses_api": True,
         }
 
+    def test_allow_disabled_reasoning_keeps_none_on_chat_completions(self) -> None:
+        config = {"isReasoning": True, "allowDisabledReasoning": True}
+        result = _reasoning_effort_kwargs(
+            "none", config, provider="azureOpenAI", model_name="gpt-5.4-mini",
+        )
+        assert result == {"reasoning_effort": "none"}
+
 
 # ---------------------------------------------------------------------------
 # get_default_embedding_model
@@ -2018,6 +2025,31 @@ class TestModelDefaultReasoningEffort:
             None, config, provider_in_bedrock="openai", model_name="openai.gpt-oss-120b-1:0",
         )
         assert fields == {"reasoning_effort": "low"}
+
+    @pytest.mark.parametrize(
+        ("provider", "model_name", "expected"),
+        [
+            ("anthropic", "anthropic.claude-3-7-sonnet-20250219-v1:0", {}),
+            ("openai", "global.openai.gpt-5.4", {"reasoning_effort": "none"}),
+            ("openai", "openai.gpt-oss-120b-1:0", {"reasoning_effort": "low"}),
+        ],
+    )
+    def test_bedrock_none_with_reasoning_allowed_off(
+        self, provider: str, model_name: str, expected: dict
+    ) -> None:
+        from app.utils.aimodels import _bedrock_additional_model_request_fields
+
+        config = {"isReasoning": True, "allowDisabledReasoning": True}
+        fields = _bedrock_additional_model_request_fields(
+            "none", config, provider_in_bedrock=provider, model_name=model_name,
+        )
+        assert fields == expected
+
+    def test_anthropic_none_with_reasoning_allowed_off_sends_no_thinking(self) -> None:
+        config = {"isReasoning": True, "allowDisabledReasoning": True}
+        assert _reasoning_effort_kwargs(
+            "none", config, provider="anthropic", model_name="claude-sonnet-4-5",
+        ) == {}
 
     def test_bedrock_request_effort_overrides_model_default(self) -> None:
         from app.utils.aimodels import _bedrock_additional_model_request_fields

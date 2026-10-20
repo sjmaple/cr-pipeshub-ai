@@ -88,4 +88,9 @@ def __getattr__(name: str):
         from app.connectors.api.router import router
 
         return router
+    # Loaded on use so services that never serve it skip the provider registry.
+    if name == "ai_models_registry_router":
+        from app.api.routes.ai_models_registry import router
+
+        return router
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

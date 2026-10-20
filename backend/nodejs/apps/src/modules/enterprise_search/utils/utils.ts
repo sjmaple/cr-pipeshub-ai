@@ -21,7 +21,11 @@ import {
   NotFoundError,
 } from '../../../libs/errors/http.errors';
 import Citation, { ICitation } from '../schema/citation.schema';
-import { CONVERSATION_STATUS, ONLY_AGENT } from '../constants/constants';
+import {
+  CONVERSATION_STATUS,
+  ONLY_AGENT,
+  REASONING_EFFORT_VALUES,
+} from '../constants/constants';
 import { Logger } from '../../../libs/services/logger.service';
 import { Response } from 'express';
 import { ChatSession } from '../schema/chat.session.schema';
@@ -577,6 +581,40 @@ export const recordClassifiedFailureOnSession = (
   );
 };
 
+/**
+ * The model an answer actually came from. When the AI service chose the model
+ * itself it reports it here; the request's `modelInfo` is kept for the
+ * conversation, never mutated here.
+ */
+export const answeredModelInfo = (
+  requested: IAIModel | undefined,
+  // From the AI service's JSON, so any field can be missing.
+  answered: Partial<IAIModel> | undefined,
+): IAIModel | undefined => {
+  if (!answered?.routed || !answered.modelKey) {
+    return requested;
+  }
+  const effort = answered.reasoningEffort;
+  return {
+    modelKey: answered.modelKey,
+    modelName: answered.modelName ?? '',
+    // The request's provider belongs to whatever the menu last showed, not to the chosen model.
+    modelProvider: answered.modelProvider ?? '',
+    chatMode: requested?.chatMode ?? 'quick',
+    ...(answered.modelFriendlyName && {
+      modelFriendlyName: answered.modelFriendlyName,
+    }),
+    ...(effort &&
+      (REASONING_EFFORT_VALUES as readonly string[]).includes(effort) && {
+        reasoningEffort: effort,
+      }),
+    routed: true,
+    ...(answered.routingReason && {
+      routingReason: answered.routingReason.slice(0, 200),
+    }),
+  };
+};
+
 export const buildAIResponseMessage = (
   aiResponse: AIServiceResponse<IAIResponse>,
   citations: ICitation[] = [],
@@ -617,7 +655,7 @@ export const buildAIResponseMessage = (
       aiTransactionId: data.metadata?.aiTransactionId,
       reason: data.reason,
     },
-    modelInfo: modelInfo,
+    modelInfo: answeredModelInfo(modelInfo, data.modelInfo),
   };
 
   // Include referenceData if present (IDs for follow-up queries)
@@ -838,6 +876,16 @@ export const formatPreviousConversations = (messages: IMessage[]) => {
       // see HOW a past answer was produced instead of text-only history
       // (see `_convert_conversation_turn`, factory.py).
       ...(toolResults.length > 0 && { tool_results: toolResults }),
+      // Lets the AI service keep a conversation on the model it chose before.
+      ...(msg.messageType === 'bot_response' &&
+        msg.modelInfo?.routed && {
+          routed: true,
+          modelKey: msg.modelInfo.modelKey,
+          modelName: msg.modelInfo.modelName,
+          ...(msg.modelInfo.reasoningEffort && {
+            reasoningEffort: msg.modelInfo.reasoningEffort,
+          }),
+        }),
     });
   }
   return result;

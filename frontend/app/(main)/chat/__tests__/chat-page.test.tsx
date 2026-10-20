@@ -66,7 +66,8 @@ vi.mock('@/app/(main)/workspace/connectors/demo-data/components', () => ({
   DemoDataRemovalNotice: () => <div>Demo removal notice</div>,
 }));
 
-vi.mock('@/config', () => ({
+vi.mock('@/config', async () => ({
+  chatModelOptions: (await import('@/app/(main)/chat/utils/chat-model-options')).chatModelOptions,
   AgentChatHeader: ({ displayName }: { displayName: string | null }) => (
     <header aria-label="Agent header">{displayName ?? 'Agent'}</header>
   ),
